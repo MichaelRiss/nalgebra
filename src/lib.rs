@@ -151,7 +151,6 @@ pub use traits::{
     Zero
 };
 
-/*
 pub use structs::{
     Identity,
     DMat,
@@ -171,11 +170,10 @@ pub use linalg::{
     qr,
     householder_matrix
 };
-*/
 
 mod structs;
 mod traits;
-// mod linalg;
+mod linalg;
 mod macros;
 
 // mod lower_triangular;
@@ -345,28 +343,6 @@ pub fn sqdist<P: FloatPnt>(a: &P, b: &P) -> P::ScalarType
           P::VectorType: Norm<NormType = <P as NumPnt>::ScalarType> {
     a.sqdist(b)
 }
-
-/*
- * Perspective
- */
-//   /// Computes a projection matrix given the frustrum near plane width, height, the field of
-//   /// view, and the distance to the clipping planes (`znear` and `zfar`).
-//   #[deprecated = "Use `Persp3::new(width / height, fov, znear, zfar).as_mat()` instead"]
-//   pub fn perspective3d<N: BaseFloat + Cast<f64> + Zero + One>(width: N, height: N, fov: N, znear: N, zfar: N) -> Mat4<N> {
-//       let aspect = width / height;
-//   
-//       let _1: N = one();
-//       let sy    = _1 / (fov * cast(0.5)).tan();
-//       let sx    = -sy / aspect;
-//       let sz    = -(zfar + znear) / (znear - zfar);
-//       let tz    = zfar * znear * cast(2.0) / (znear - zfar);
-//   
-//       Mat4::new(
-//           sx,     zero(), zero(), zero(),
-//           zero(), sy,     zero(), zero(),
-//           zero(), zero(), sz,     tz,
-//           zero(), zero(), one(),  zero())
-//   }
 
 /*
  * Translation<V>
@@ -941,7 +917,3 @@ pub fn shape<V: Shape<I>, I>(v: &V) -> I {
 pub fn cast<T, U: Cast<T>>(t: T) -> U {
     Cast::from(t)
 }
-
-/*
- * Indexable
- */

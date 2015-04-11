@@ -41,23 +41,7 @@ macro_rules! dvec_impl(
             }
         }
 
-        impl<N: Copy> Indexable<usize, N> for $dvec<N> {
-            #[inline]
-            fn at(&self, i: usize) -> N {
-                assert!(i < self.len());
-                unsafe {
-                    self.unsafe_at(i)
-                }
-            }
-
-            #[inline]
-            fn set(&mut self, i: usize, val: N) {
-                assert!(i < self.len());
-                unsafe {
-                    self.unsafe_set(i, val);
-                }
-            }
-
+        impl<N: Copy> Indexable<usize> for $dvec<N> {
             #[inline]
             fn swap(&mut self, i: usize, j: usize) {
                 assert!(i < self.len());
@@ -110,14 +94,18 @@ macro_rules! dvec_impl(
             }
         }
 
-        impl<N> Iterable<N> for $dvec<N> {
+        impl<N> Iterable for $dvec<N> {
+            type Item = N;
+
             #[inline]
             fn iter<'l>(&'l self) -> Iter<'l, N> {
                 self.as_slice().iter()
             }
         }
 
-        impl<N> IterableMut<N> for $dvec<N> {
+        impl<N> IterableMut for $dvec<N> {
+            type ItemMut = N;
+
             #[inline]
             fn iter_mut<'l>(&'l mut self) -> IterMut<'l, N> {
                 self.as_mut_slice().iter_mut()
@@ -147,7 +135,7 @@ macro_rules! dvec_impl(
                 for i in 0..dim {
                     let mut basis_element : $dvec<N> = $dvec::new_zeros(dim);
 
-                    basis_element.set(i, ::one());
+                    basis_element[i] = ::one();
 
                     res.push(basis_element);
                 }
@@ -166,7 +154,7 @@ macro_rules! dvec_impl(
                 for i in 0..dim {
                     let mut basis_element : $dvec<N> = $dvec::new_zeros(self.len());
 
-                    basis_element.set(i, ::one());
+                    basis_element[i] = ::one();
 
                     if res.len() == dim - 1 {
                         break;
@@ -269,7 +257,9 @@ macro_rules! dvec_impl(
             }
         }
 
-        impl<N: BaseNum> Dot<N> for $dvec<N> {
+        impl<N: BaseNum> Dot for $dvec<N> {
+            type DotProductType = N;
+
             #[inline]
             fn dot(&self, other: &$dvec<N>) -> N {
                 assert!(self.len() == other.len());
@@ -281,7 +271,9 @@ macro_rules! dvec_impl(
             }
         }
 
-        impl<N: BaseFloat> Norm<N> for $dvec<N> {
+        impl<N: BaseFloat> Norm for $dvec<N> {
+            type NormType = N;
+
             #[inline]
             fn sqnorm(&self) -> N {
                 Dot::dot(self, self)

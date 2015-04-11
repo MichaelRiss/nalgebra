@@ -188,21 +188,7 @@ macro_rules! indexable_impl(
             }
         }
 
-        impl<N: Copy> Indexable<usize, N> for $t<N> {
-            #[inline]
-            fn at(&self, i: usize) -> N {
-                unsafe {
-                    mem::transmute::<&$t<N>, &[N; $dim]>(self)[i]
-                }
-            }
-
-            #[inline]
-            fn set(&mut self, i: usize, val: N) {
-                unsafe {
-                    mem::transmute::<&mut $t<N>, &mut [N; $dim]>(self)[i] = val
-                }
-            }
-
+        impl<N: Copy> Indexable<usize> for $t<N> {
             #[inline]
             fn swap(&mut self, i1: usize, i2: usize) {
                 unsafe {
@@ -257,7 +243,9 @@ macro_rules! new_repeat_impl(
 
 macro_rules! iterable_impl(
     ($t: ident, $dim: expr) => (
-        impl<N> Iterable<N> for $t<N> {
+        impl<N> Iterable for $t<N> {
+            type Item = N;
+
             #[inline]
             fn iter<'l>(&'l self) -> Iter<'l, N> {
                 unsafe {
@@ -270,7 +258,9 @@ macro_rules! iterable_impl(
 
 macro_rules! iterable_mut_impl(
     ($t: ident, $dim: expr) => (
-        impl<N> IterableMut<N> for $t<N> {
+        impl<N> IterableMut for $t<N> {
+            type ItemMut = N;
+
             #[inline]
             fn iter_mut<'l>(&'l mut self) -> IterMut<'l, N> {
                 unsafe {
@@ -509,7 +499,9 @@ macro_rules! add (
 
 macro_rules! dot_impl(
     ($t: ident, $($compN: ident),+) => (
-        impl<N: BaseNum> Dot<N> for $t<N> {
+        impl<N: BaseNum> Dot for $t<N> {
+            type DotProductType = N;
+
             #[inline]
             fn dot(&self, other: &$t<N>) -> N {
                 add!($(self.$compN * other.$compN ),+)
@@ -552,7 +544,9 @@ macro_rules! scalar_ops_impl(
 
 macro_rules! translation_impl(
     ($t: ident) => (
-        impl<N: Copy + Add<N, Output = N> + Neg<Output = N>> Translation<$t<N>> for $t<N> {
+        impl<N: Copy + Add<N, Output = N> + Neg<Output = N>> Translation for $t<N> {
+            type TranslationType = $t<N>;
+
             #[inline]
             fn translation(&self) -> $t<N> {
                 *self
@@ -593,7 +587,9 @@ macro_rules! translation_impl(
 
 macro_rules! norm_impl(
     ($t: ident, $($compN: ident),+) => (
-        impl<N: Copy + BaseFloat> Norm<N> for $t<N> {
+        impl<N: BaseFloat> Norm for $t<N> {
+            type NormType = N;
+
             #[inline]
             fn sqnorm(&self) -> N {
                 Dot::dot(self, self)
@@ -720,7 +716,9 @@ macro_rules! bounded_impl(
 
 macro_rules! vec_to_homogeneous_impl(
     ($t: ident, $t2: ident, $extra: ident, $($compN: ident),+) => (
-        impl<N: Copy + One + Zero> ToHomogeneous<$t2<N>> for $t<N> {
+        impl<N: Copy + One + Zero> ToHomogeneous for $t<N> {
+            type HomogeneousFormType = $t2<N>;
+
             fn to_homogeneous(&self) -> $t2<N> {
                 let mut res: $t2<N> = ::zero();
 
@@ -807,36 +805,25 @@ macro_rules! vec_as_pnt_impl(
                 }
             }
         }
-
-        impl<N> VecAsPnt<$t<N>> for $tv<N> {
-            #[inline]
-            fn to_pnt(self) -> $t<N> {
-                self.to_pnt()
-            }
-
-            #[inline]
-            fn as_pnt(&self) -> &$t<N> {
-                self.as_pnt()
-            }
-        }
     )
 );
 
 macro_rules! num_float_vec_impl(
     ($t: ident) => (
-        impl<N> NumVec<N> for $t<N>
-            where N: BaseNum {
+        impl<N: BaseNum> NumVec for $t<N> {
+            type ScalarType = N;
         }
 
-        impl<N> FloatVec<N> for $t<N>
-            where N: BaseFloat + ApproxEq<N> {
+        impl<N: BaseFloat + ApproxEq<N>> FloatVec for $t<N> {
         }
     )
 );
 
 macro_rules! absolute_vec_impl(
   ($t: ident, $($compN: ident),+) => (
-    impl<N: Absolute<N>> Absolute<$t<N>> for $t<N> {
+    impl<N: Absolute<AbsoluteValueType = N>> Absolute for $t<N> {
+        type AbsoluteValueType = $t<N>;
+
         #[inline]
         fn abs(m: &$t<N>) -> $t<N> {
             $t::new($(::abs(&m.$compN) ),+)

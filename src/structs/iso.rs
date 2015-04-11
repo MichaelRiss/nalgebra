@@ -101,7 +101,7 @@ impl<N> Iso4<N> {
 }
 
 iso_impl!(Iso2, Rot2, Vec2, Vec1);
-rotation_matrix_impl!(Iso2, Rot2, Vec2, Vec1);
+rotation_matrix_impl!(Iso2, Rot2);
 rotation_impl!(Iso2, Rot2, Vec1);
 dim_impl!(Iso2, 2);
 one_impl!(Iso2);
@@ -121,7 +121,7 @@ pnt_mul_iso_impl!(Iso2, Pnt2);
 arbitrary_iso_impl!(Iso2);
 
 iso_impl!(Iso3, Rot3, Vec3, Vec3);
-rotation_matrix_impl!(Iso3, Rot3, Vec3, Vec3);
+rotation_matrix_impl!(Iso3, Rot3);
 rotation_impl!(Iso3, Rot3, Vec3);
 dim_impl!(Iso3, 3);
 one_impl!(Iso3);
@@ -141,7 +141,7 @@ pnt_mul_iso_impl!(Iso3, Pnt3);
 arbitrary_iso_impl!(Iso3);
 
 // iso_impl!(Iso4, Rot4, Vec4, Vec4);
-// rotation_matrix_impl!(Iso4, Rot4, Vec4, Vec4);
+// rotation_matrix_impl!(Iso4, Rot4);
 // rotation_impl!(Iso4, Rot4, Vec4);
 dim_impl!(Iso4, 4);
 one_impl!(Iso4);

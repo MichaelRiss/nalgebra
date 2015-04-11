@@ -179,9 +179,11 @@ macro_rules! mat_sub_scalar_impl(
 
 macro_rules! absolute_impl(
   ($t: ident, $($compN: ident),+) => (
-    impl<N: Absolute<N>> Absolute<$t<N>> for $t<N> {
+    impl<N: Absolute> Absolute for $t<N> {
+        type AbsoluteValueType = $t<N::AbsoluteValueType>;
+
         #[inline]
-        fn abs(m: &$t<N>) -> $t<N> {
+        fn abs(m: &$t<N>) -> $t<N::AbsoluteValueType> {
             $t::new($(::abs(&m.$compN) ),+)
         }
     }
@@ -190,7 +192,9 @@ macro_rules! absolute_impl(
 
 macro_rules! iterable_impl(
   ($t: ident, $dim: expr) => (
-    impl<N> Iterable<N> for $t<N> {
+    impl<N> Iterable for $t<N> {
+        type Item = N;
+
         #[inline]
         fn iter<'l>(&'l self) -> Iter<'l, N> {
             unsafe {
@@ -203,7 +207,9 @@ macro_rules! iterable_impl(
 
 macro_rules! iterable_mut_impl(
   ($t: ident, $dim: expr) => (
-    impl<N> IterableMut<N> for $t<N> {
+    impl<N> IterableMut for $t<N> {
+        type ItemMut = N;
+
         #[inline]
         fn iter_mut<'l>(&'l mut self) -> IterMut<'l, N> {
             unsafe {
@@ -263,21 +269,7 @@ macro_rules! indexable_impl(
         }
     }
 
-    impl<N: Copy> Indexable<(usize, usize), N> for $t<N> {
-        #[inline]
-        fn at(&self, (i, j): (usize, usize)) -> N {
-            unsafe {
-                mem::transmute::<&$t<N>, &[N; $dim * $dim]>(self)[i + j * $dim]
-            }
-        }
-
-        #[inline]
-        fn set(&mut self, (i, j): (usize, usize), val: N) {
-            unsafe {
-                mem::transmute::<&mut $t<N>, &mut [N; $dim * $dim]>(self)[i + j * $dim] = val
-            }
-        }
-
+    impl<N: Copy> Indexable<(usize, usize)> for $t<N> {
         #[inline]
         fn swap(&mut self, (i1, j1): (usize, usize), (i2, j2): (usize, usize)) {
             unsafe {
@@ -323,7 +315,9 @@ macro_rules! index_impl(
 
 macro_rules! col_slice_impl(
     ($t: ident, $tv: ident, $slice: ident, $dim: expr) => (
-        impl<N: Clone + Copy + Zero> ColSlice<$slice<N>> for $t<N> {
+        impl<N: Clone + Copy + Zero> ColSlice for $t<N> {
+            type ColSliceType = $slice<N>;
+
             fn col_slice(&self, cid: usize, rstart: usize, rend: usize) -> $slice<N> {
                 let col = self.col(cid);
 
@@ -335,7 +329,9 @@ macro_rules! col_slice_impl(
 
 macro_rules! row_impl(
   ($t: ident, $tv: ident, $dim: expr) => (
-    impl<N: Copy + Zero> Row<$tv<N>> for $t<N> {
+    impl<N: Copy + Zero> Row for $t<N> {
+        type RowType = $tv<N>;
+
         #[inline]
         fn nrows(&self) -> usize {
             Dim::dim(None::<$t<N>>)
@@ -344,7 +340,7 @@ macro_rules! row_impl(
         #[inline]
         fn set_row(&mut self, row: usize, v: $tv<N>) {
             for (i, e) in v.iter().enumerate() {
-                self.set((row, i), *e);
+                self[(row, i)] =  *e;
             }
         }
 
@@ -353,7 +349,7 @@ macro_rules! row_impl(
             let mut res: $tv<N> = ::zero();
 
             for (i, e) in res.iter_mut().enumerate() {
-                *e = self.at((row, i));
+                *e = self[(row, i)];
             }
 
             res
@@ -364,7 +360,9 @@ macro_rules! row_impl(
 
 macro_rules! row_slice_impl(
     ($t: ident, $tv: ident, $slice: ident, $dim: expr) => (
-        impl<N: Clone + Copy + Zero> RowSlice<$slice<N>> for $t<N> {
+        impl<N: Clone + Copy + Zero> RowSlice for $t<N> {
+            type RowSliceType = $slice<N>;
+
             fn row_slice(&self, rid: usize, cstart: usize, cend: usize) -> $slice<N> {
                 let row = self.row(rid);
 
@@ -376,7 +374,9 @@ macro_rules! row_slice_impl(
 
 macro_rules! col_impl(
   ($t: ident, $tv: ident, $dim: expr) => (
-    impl<N: Copy + Zero> Col<$tv<N>> for $t<N> {
+    impl<N: Copy + Zero> Col for $t<N> {
+        type ColumnType = $tv<N>;
+
         #[inline]
         fn ncols(&self) -> usize {
             Dim::dim(None::<$t<N>>)
@@ -385,7 +385,7 @@ macro_rules! col_impl(
         #[inline]
         fn set_col(&mut self, col: usize, v: $tv<N>) {
             for (i, e) in v.iter().enumerate() {
-                self.set((i, col), *e);
+                self[(i, col)] = *e;
             }
         }
 
@@ -394,7 +394,7 @@ macro_rules! col_impl(
             let mut res: $tv<N> = ::zero();
 
             for (i, e) in res.iter_mut().enumerate() {
-                *e = self.at((i, col));
+                *e = self[(i, col)];
             }
 
             res
@@ -405,7 +405,9 @@ macro_rules! col_impl(
 
 macro_rules! diag_impl(
     ($t: ident, $tv: ident, $dim: expr) => (
-        impl<N: Copy + Zero> Diag<$tv<N>> for $t<N> {
+        impl<N: Copy + Zero> Diag for $t<N> {
+            type DiagonalType = $tv<N>;
+
             #[inline]
             fn from_diag(diag: &$tv<N>) -> $t<N> {
                 let mut res: $t<N> = ::zero();
@@ -417,7 +419,7 @@ macro_rules! diag_impl(
 
             #[inline]
             fn set_diag(&mut self, diag: &$tv<N>) {
-                for i in 0..$dim {
+                for i in 0 .. $dim {
                     unsafe { self.unsafe_set((i, i), diag.unsafe_at(i)) }
                 }
             }
@@ -426,7 +428,7 @@ macro_rules! diag_impl(
             fn diag(&self) -> $tv<N> {
                 let mut diag: $tv<N> = ::zero();
 
-                for i in 0..$dim {
+                for i in 0 .. $dim {
                     unsafe { diag.unsafe_set(i, self.unsafe_at((i, i))) }
                 }
 
@@ -445,12 +447,12 @@ macro_rules! mat_mul_mat_impl(
             // careful! we need to comute other * self here (self is the rhs).
             let mut res: $t<N> = ::zero();
 
-            for i in 0..$dim {
-                for j in 0..$dim {
+            for i in 0 .. $dim {
+                for j in 0 .. $dim {
                     let mut acc: N = ::zero();
 
                     unsafe {
-                        for k in 0..$dim {
+                        for k in 0 .. $dim {
                             acc = acc + self.at_fast((i, k)) * right.at_fast((k, j));
                         }
 
@@ -474,8 +476,8 @@ macro_rules! vec_mul_mat_impl(
         fn mul(self, right: $t<N>) -> $v<N> {
             let mut res : $v<N> = $zero();
 
-            for i in 0..$dim {
-                for j in 0..$dim {
+            for i in 0 .. $dim {
+                for j in 0 .. $dim {
                     unsafe {
                         let val = res.at_fast(i) + self.at_fast(j) * right.at_fast((j, i));
                         res.set_fast(i, val)
@@ -498,8 +500,8 @@ macro_rules! mat_mul_vec_impl(
         fn mul(self, right: $v<N>) -> $v<N> {
             let mut res : $v<N> = $zero();
 
-            for i in 0..$dim {
-                for j in 0..$dim {
+            for i in 0 .. $dim {
+                for j in 0 .. $dim {
                     unsafe {
                         let val = res.at_fast(i) + self.at_fast((i, j)) * right.at_fast(j);
                         res.set_fast(i, val)
@@ -544,7 +546,7 @@ macro_rules! inv_impl(
             let mut res: $t<N> = ::one();
 
             // inversion using Gauss-Jordan elimination
-            for k in 0..$dim {
+            for k in 0 .. $dim {
                 // search a non-zero value on the k-th column
                 // FIXME: would it be worth it to spend some more time searching for the
                 // max instead?
@@ -552,7 +554,7 @@ macro_rules! inv_impl(
                 let mut n0 = k; // index of a non-zero entry
 
                 while n0 != $dim {
-                    if self.at((n0, k)) != ::zero() {
+                    if self[(n0, k)] != ::zero() {
                         break;
                     }
 
@@ -565,36 +567,36 @@ macro_rules! inv_impl(
 
                 // swap pivot line
                 if n0 != k {
-                    for j in 0..$dim {
+                    for j in 0 .. $dim {
                         self.swap((n0, j), (k, j));
                         res.swap((n0, j), (k, j));
                     }
                 }
 
-                let pivot = self.at((k, k));
+                let pivot = self[(k, k)];
 
-                for j in k..$dim {
-                    let selfval = self.at((k, j)) / pivot;
-                    self.set((k, j), selfval);
+                for j in k .. $dim {
+                    let selfval = self[(k, j)] / pivot;
+                    self[(k, j)] = selfval;
                 }
 
-                for j in 0..$dim {
-                    let resval = res.at((k, j)) / pivot;
-                    res.set((k, j), resval);
+                for j in 0 .. $dim {
+                    let resval = res[(k, j)] / pivot;
+                    res[(k, j)] = resval;
                 }
 
-                for l in 0..$dim {
+                for l in 0 .. $dim {
                     if l != k {
-                        let normalizer = self.at((l, k));
+                        let normalizer = self[(l, k)];
 
-                        for j in k..$dim {
-                            let selfval = self.at((l, j)) - self.at((k, j)) * normalizer;
-                            self.set((l, j), selfval);
+                        for j in k .. $dim {
+                            let selfval = self[(l, j)] - self[(k, j)] * normalizer;
+                            self[(l, j)] = selfval;
                         }
 
-                        for j in 0..$dim {
-                            let resval  = res.at((l, j)) - res.at((k, j)) * normalizer;
-                            res.set((l, j), resval);
+                        for j in 0 .. $dim {
+                            let resval  = res[(l, j)] - res[(k, j)] * normalizer;
+                            res[(l, j)] = resval;
                         }
                     }
                 }
@@ -621,8 +623,8 @@ macro_rules! transpose_impl(
 
         #[inline]
         fn transpose_mut(&mut self) {
-            for i in 1..$dim {
-                for j in 0..i {
+            for i in 1 .. $dim {
+                for j in 0 .. i {
                     self.swap((i, j), (j, i))
                 }
             }
@@ -661,14 +663,16 @@ macro_rules! approx_eq_impl(
 
 macro_rules! to_homogeneous_impl(
   ($t: ident, $t2: ident, $dim: expr, $dim2: expr) => (
-    impl<N: BaseNum + Copy> ToHomogeneous<$t2<N>> for $t<N> {
+    impl<N: BaseNum + Copy> ToHomogeneous for $t<N> {
+        type HomogeneousFormType = $t2<N>;
+
         #[inline]
         fn to_homogeneous(&self) -> $t2<N> {
             let mut res: $t2<N> = ::one();
 
-            for i in 0..$dim {
-                for j in 0..$dim {
-                    res.set((i, j), self.at((i, j)))
+            for i in 0 .. $dim {
+                for j in 0 .. $dim {
+                    res[(i, j)] = self[(i, j)]
                 }
             }
 
@@ -685,9 +689,9 @@ macro_rules! from_homogeneous_impl(
         fn from(m: &$t2<N>) -> $t<N> {
             let mut res: $t<N> = ::one();
 
-            for i in 0..$dim2 {
-                for j in 0..$dim2 {
-                    res.set((i, j), m.at((i, j)))
+            for i in 0 .. $dim2 {
+                for j in 0 .. $dim2 {
+                    res[(i, j)] = m[(i, j)]
                 }
             }
 
@@ -702,13 +706,15 @@ macro_rules! from_homogeneous_impl(
 
 macro_rules! outer_impl(
     ($t: ident, $m: ident) => (
-        impl<N: Copy + Mul<N, Output = N> + Zero> Outer<$m<N>> for $t<N> {
+        impl<N: Copy + Mul<N, Output = N> + Zero> Outer for $t<N> {
+            type OuterProductType = $m<N>;
+
             #[inline]
             fn outer(&self, other: &$t<N>) -> $m<N> {
                 let mut res: $m<N> = ::zero();
-                for i in 0..Dim::dim(None::<$t<N>>) {
-                    for j in 0..Dim::dim(None::<$t<N>>) {
-                        res.set((i, j), self.at(i) * other.at(j))
+                for i in 0 .. Dim::dim(None::<$t<N>>) {
+                    for j in 0 .. Dim::dim(None::<$t<N>>) {
+                        res[(i, j)] = self[i] * other[j]
                     }
                 }
                 res

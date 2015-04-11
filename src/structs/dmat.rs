@@ -9,7 +9,8 @@ use std::fmt::{Debug, Display, Formatter, Result};
 use rand::{self, Rand};
 use structs::dvec::DVec;
 use traits::operations::{ApproxEq, Inv, Transpose, Mean, Cov};
-use traits::structure::{Cast, ColSlice, RowSlice, Diag, Eye, Indexable, Shape, Zero, One, BaseNum};
+use traits::structure::{Cast, ColSlice, RowSlice, Diag, Eye, Indexable, Shape, Zero, One, BaseNum,
+                        BaseFloat};
 #[cfg(feature="arbitrary")]
 use quickcheck::{Arbitrary, Gen};
 
@@ -197,39 +198,13 @@ impl<N> DMat<N> {
 
 }
 
-impl<N: Copy> Indexable<(usize, usize), N> for DMat<N> {
-    /// Changes the value of a component of the matrix.
-    ///
-    /// # Arguments
-    /// * `rowcol` - 0-based tuple (row, col)  to be changed
-    #[inline]
-    fn set(&mut self, rowcol: (usize,  usize), val: N) {
-        let (row, col) = rowcol;
-        assert!(row < self.nrows);
-        assert!(col < self.ncols);
-
-        let offset = self.offset(row, col);
-        self.mij[offset] = val
-    }
-
+impl<N: Copy> Indexable<(usize, usize)> for DMat<N> {
     /// Just like `set` without bounds checking.
     #[inline]
     unsafe fn unsafe_set(&mut self, rowcol: (usize, usize), val: N) {
         let (row, col) = rowcol;
         let offset = self.offset(row, col);
         *self.mij[..].get_unchecked_mut(offset) = val
-    }
-
-    /// Reads the value of a component of the matrix.
-    ///
-    /// # Arguments
-    /// * `rowcol` - 0-based tuple (row, col)  to be read
-    #[inline]
-    fn at(&self, rowcol: (usize, usize)) -> N {
-        let (row, col) = rowcol;
-        assert!(row < self.nrows);
-        assert!(col < self.ncols);
-        unsafe { self.unsafe_at((row, col)) }
     }
 
     /// Just like `at` without bounds checking.
@@ -495,7 +470,9 @@ impl<N: Clone + Copy> Transpose for DMat<N> {
     }
 }
 
-impl<N: BaseNum + Cast<f64> + Clone> Mean<DVec<N>> for DMat<N> {
+impl<N: BaseFloat> Mean for DMat<N> {
+    type MeanValueType = DVec<N>;
+
     fn mean(&self) -> DVec<N> {
         let mut res: DVec<N> = DVec::new_zeros(self.ncols);
         let normalizer: N    = Cast::from(1.0f64 / self.nrows as f64);
@@ -513,7 +490,9 @@ impl<N: BaseNum + Cast<f64> + Clone> Mean<DVec<N>> for DMat<N> {
     }
 }
 
-impl<N: BaseNum + Cast<f64> + Clone> Cov<DMat<N>> for DMat<N> {
+impl<N: BaseFloat> Cov for DMat<N> {
+    type CovarianceMatrixType = DMat<N>;
+
     // FIXME: this could be heavily optimized, removing all temporaries by merging loops.
     fn cov(&self) -> DMat<N> {
         assert!(self.nrows > 1);
@@ -538,7 +517,9 @@ impl<N: BaseNum + Cast<f64> + Clone> Cov<DMat<N>> for DMat<N> {
     }
 }
 
-impl<N: Copy + Clone> ColSlice<DVec<N>> for DMat<N> {
+impl<N: Copy + Clone> ColSlice for DMat<N> {
+    type ColSliceType = DVec<N>;
+
     fn col_slice(&self, col_id :usize, row_start: usize, row_end: usize) -> DVec<N> {
         assert!(col_id < self.ncols);
         assert!(row_start < row_end);
@@ -551,7 +532,9 @@ impl<N: Copy + Clone> ColSlice<DVec<N>> for DMat<N> {
     }
 }
 
-impl<N: Copy> RowSlice<DVec<N>> for DMat<N> {
+impl<N: Copy> RowSlice for DMat<N> {
+    type RowSliceType = DVec<N>;
+
     fn row_slice(&self, row_id :usize, col_start: usize, col_end: usize) -> DVec<N> {
         assert!(row_id < self.nrows);
         assert!(col_start < col_end);
@@ -570,7 +553,9 @@ impl<N: Copy> RowSlice<DVec<N>> for DMat<N> {
     }
 }
 
-impl<N: Copy + Clone + Zero>  Diag<DVec<N>> for DMat<N> {
+impl<N: Copy + Clone + Zero>  Diag for DMat<N> {
+    type DiagonalType = DVec<N>;
+
     #[inline]
     fn from_diag(diag: &DVec<N>) -> DMat<N> {
         let mut res = DMat::new_zeros(diag.len(), diag.len());
